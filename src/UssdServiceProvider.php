@@ -65,6 +65,7 @@ class UssdServiceProvider extends ServiceProvider
         $this->loadRoutes();
         $this->registerCommands();
         $this->excludeFromCsrf();
+        $this->registerMiddleware();
     }
 
     /**
@@ -196,6 +197,16 @@ class UssdServiceProvider extends ServiceProvider
                 Console\UssdCleanCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Register package middleware aliases.
+     */
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        $router->aliasMiddleware('throttle.ussd', Http\Middleware\ThrottleUssdRequests::class);
     }
 
     /**
