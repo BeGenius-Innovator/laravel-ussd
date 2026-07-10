@@ -228,7 +228,7 @@ class UssdEngine
     {
         $this->sessionManager->destroy($request->sessionId());
 
-        return UssdResponse::end('Session expired. Please dial again.');
+        return UssdResponse::end(__('ussd::ussd.session_expired'));
     }
 
     /**
@@ -240,7 +240,7 @@ class UssdEngine
             'exception' => $e,
         ]);
 
-        return UssdResponse::end('A system error occurred. Please try again later.');
+        return UssdResponse::end(__('ussd::ussd.system_error'));
     }
 
     /**

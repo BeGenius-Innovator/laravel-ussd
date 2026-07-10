@@ -61,6 +61,7 @@ class UssdServiceProvider extends ServiceProvider
         }
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'ussd');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'ussd');
         $this->loadMigrations();
         $this->loadRoutes();
         $this->registerCommands();

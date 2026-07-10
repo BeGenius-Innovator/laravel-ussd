@@ -67,7 +67,7 @@ class ThrottleUssdRequests
         $retryAfter = $this->limiter->availableIn($key);
 
         return new Response(
-            "END Too many requests. Please try again later.\n",
+            "END ".__('ussd::ussd.too_many_requests')."\n",
             429,
             [
                 'Retry-After' => $retryAfter,
