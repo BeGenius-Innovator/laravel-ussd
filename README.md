@@ -3,6 +3,7 @@
 [![Latest Version](https://img.shields.io/packagist/v/begenius/laravel-ussd.svg?style=flat-square)](https://packagist.org/packages/begenius/laravel-ussd)
 [![MIT License](https://img.shields.io/packagist/l/begenius/laravel-ussd.svg?style=flat-square)](LICENSE)
 [![Total Downloads](https://img.shields.io/packagist/dt/begenius/laravel-ussd.svg?style=flat-square)](https://packagist.org/packages/begenius/laravel-ussd)
+[![Tests](https://github.com/begenius/laravel-ussd/actions/workflows/tests.yml/badge.svg)](https://github.com/begenius/laravel-ussd/actions/workflows/tests.yml)
 
 Build production-grade USSD applications in Laravel.
 
@@ -41,11 +42,14 @@ This package provides a complete framework for building USSD services:
 
 - **Menu system** — Declarative, tree-based navigation
 - **Flow engine** — Multi-step workflows with state machine
-- **Session management** — Persistent state across USSD requests
-- **Gateway abstraction** — Works with any telecom provider
+- **Session management** — Database, Redis, or in-memory storage
+- **11 gateway drivers** — Orange, Moov, Africa's Talking, Infobip, Twilio, Beem, Advanta, Hubtel, MTN, Vodacom, Airtel
+- **Rate limiting** — Per phone number throttling with END 429 response
+- **Multi-language** — Built-in EN/FR with easy extensibility
 - **Validation** — Input validation per flow step
 - **Logging** — Request/response logging
 - **Simulator** — Web-based testing tool
+- **Artisan commands** — `ussd:list` and `ussd:clean`
 - **Error handling** — Graceful error recovery
 
 ### Architecture overview
@@ -116,6 +120,7 @@ Configure the package in `config/ussd.php` or via environment variables:
 USSD_DRIVER=default
 USSD_SESSION_DRIVER=database
 USSD_SESSION_LIFETIME=2
+USSD_REDIS_CONNECTION=default
 USSD_ROUTES_PREFIX=ussd
 USSD_SIMULATOR_ENABLED=false
 USSD_LOGGING_ENABLED=true
@@ -124,8 +129,9 @@ USSD_LOGGING_ENABLED=true
 | Option | Default | Description |
 |--------|---------|-------------|
 | `default_driver` | `default` | USSD gateway driver |
-| `session_driver` | `database` | Session storage driver |
+| `session_driver` | `database` | Session storage driver (`database`, `redis`, `array`) |
 | `session_lifetime` | `2` | Session timeout (minutes) |
+| `redis_connection` | `default` | Redis connection name for `redis` session driver |
 | `session_table` | `ussd_sessions` | Database table name |
 | `routes_prefix` | `ussd` | URL prefix for USSD routes |
 | `default_menu` | `welcome` | Initial menu name |
@@ -377,7 +383,7 @@ Ussd::menu('main')
 
 ## Sessions
 
-Sessions persist user state across USSD requests. The package supports database and in-memory (array) drivers.
+Sessions persist user state across USSD requests. The package supports three drivers.
 
 ### Session data
 
@@ -404,6 +410,31 @@ $context->session()->forget('amount');
 ## Drivers
 
 ### USSD Gateway Drivers
+
+### Built-in gateway drivers
+
+| Driver | Class | Gateways |
+|--------|-------|----------|
+| `default` | `DefaultUssdDriver` | Generic (use as fallback) |
+| `orange` | `OrangeDriver` | Orange CI, Orange SN |
+| `moov` | `MoovDriver` | Moov Africa |
+| `africastalking` | `AfricasTalkingDriver` | Africa's Talking |
+| `infobip` | `InfobipDriver` | Infobip |
+| `twilio` | `TwilioDriver` | Twilio |
+| `beem` | `BeemDriver` | Beem (Tanzania) |
+| `advanta` | `AdvantaDriver` | Advanta |
+| `hubtel` | `HubtelDriver` | Hubtel (Ghana) |
+| `mtn` | `MtnDriver` | MTN |
+| `vodacom` | `VodacomDriver` | Vodacom (DRC) |
+| `airtel` | `AirtelDriver` | Airtel |
+
+Set the driver in `.env`:
+
+```env
+USSD_DRIVER=orange
+```
+
+### Custom gateway driver
 
 Create a driver for your specific gateway:
 
@@ -443,24 +474,20 @@ $this->app->bind(UssdDriverContract::class, function ($app) {
 
 Built-in session drivers:
 
-- **database** — MySQL/PostgreSQL storage (production)
-- **array** — In-memory (testing only)
+| Driver | Class | Use case |
+|--------|-------|----------|
+| `database` | `DatabaseSessionDriver` | MySQL/PostgreSQL (production) |
+| `redis` | `RedisSessionDriver` | High-performance with TTL (production) |
+| `array` | `ArraySessionDriver` | In-memory (testing only) |
 
-Create a Redis driver:
+Switch driver via `.env`:
 
-```php
-use BeGenius\Ussd\Contracts\SessionDriver;
-use BeGenius\Ussd\Core\UssdSession;
-use Illuminate\Support\Facades\Redis;
-
-class RedisSessionDriver implements SessionDriver
-{
-    public function find(string $sessionId): ?UssdSession { /* ... */ }
-    public function save(UssdSession $session): void      { /* ... */ }
-    public function delete(string $sessionId): void        { /* ... */ }
-    public function purgeExpired(int $lifetime): int       { /* ... */ }
-}
+```env
+USSD_SESSION_DRIVER=redis
+USSD_REDIS_CONNECTION=default
 ```
+
+The Redis driver stores sessions as JSON with a configurable TTL (`session_lifetime`) and supports custom Redis connections.
 
 ---
 
@@ -490,6 +517,100 @@ Open `http://localhost:8000/ussd/simulator` in your browser.
 ```
 
 > ⚠️ Disable in production: `USSD_SIMULATOR_ENABLED=false`
+
+---
+
+## Artisan Commands
+
+### `ussd:list`
+
+List all registered menus and their options:
+
+```bash
+php artisan ussd:list
+```
+
+Output:
+
+```
++----------------+---------+-----------------------+
+| Menu           | Options | Preview               |
++----------------+---------+-----------------------+
+| welcome        | 3       |  1. Check Balance     |
+|                |         |  2. Transfer Money    |
+|                |         |  3. Help              |
++----------------+---------+-----------------------+
+```
+
+### `ussd:clean`
+
+Purge expired sessions from storage:
+
+```bash
+php artisan ussd:clean                    # purge sessions > 2 min old
+php artisan ussd:clean --minutes=5        # purge sessions > 5 min old
+```
+
+---
+
+## Rate Limiting
+
+Protect your USSD endpoint from abuse. The built-in `ThrottleUssdRequests` middleware limits by phone number (with IP fallback):
+
+```php
+// In a route file
+Route::post('/ussd/callback', [UssdController::class, 'handle'])
+    ->middleware('throttle:ussd');
+```
+
+Customize limits in `AppServiceProvider`:
+
+```php
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+
+RateLimiter::for('ussd', function ($job) {
+    return Limit::perMinute(10)->by($job->input('phoneNumber', $job->ip()));
+});
+```
+
+When the limit is exceeded, the middleware returns a `429 Too Many Requests` response with `END` format.
+
+---
+
+## Multi-language
+
+Built-in translations for English and French.
+
+```php
+__('ussd::ussd.session_expired');
+// en: "Session expired. Please dial again."
+// fr: "Session expirée. Veuillez recomposer le code."
+```
+
+Switch locale as usual:
+
+```php
+app()->setLocale('fr');
+```
+
+Publish and customise:
+
+```bash
+php artisan vendor:publish --tag=ussd-lang
+```
+
+Available keys:
+
+| Key | English | French |
+|-----|---------|--------|
+| `welcome` | Welcome | Bienvenue |
+| `back` | Back | Retour |
+| `confirm` | Confirm | Confirmer |
+| `cancel` | Cancel | Annuler |
+| `session_expired` | Session expired... | Session expirée... |
+| `system_error` | A system error... | Une erreur système... |
+| `too_many_requests` | Too many requests... | Trop de requêtes... |
 
 ---
 
@@ -531,6 +652,8 @@ src/
 │   ├── Controllers/
 │   │   ├── UssdController.php     # Gateway callback controller
 │   │   └── SimulatorController.php # Web simulator
+│   ├── Middleware/
+│   │   └── ThrottleUssdRequests.php # Rate limiter middleware
 │   └── Requests/
 │       └── UssdRequest.php        # Parsed USSD request
 ├── Responses/
@@ -546,9 +669,10 @@ src/
 │   ├── UssdDriver.php             # Gateway driver interface
 │   └── SessionDriver.php          # Session storage interface
 ├── Drivers/
-│   ├── DefaultUssdDriver.php      # Default gateway driver
+│   ├── Gateway/                   # 11 gateway driver files
 │   └── Session/
 │       ├── DatabaseSessionDriver.php # DB session storage
+│       ├── RedisSessionDriver.php    # Redis session storage
 │       └── ArraySessionDriver.php    # In-memory session
 ├── Services/
 │   ├── SessionManager.php         # Session lifecycle
@@ -557,7 +681,12 @@ src/
 │   ├── UssdException.php          # Base exception
 │   ├── InvalidMenuException.php   # Menu not found
 │   └── SessionExpiredException.php # Session timeout
-└── Console/                       # Artisan commands (future)
+└── Console/
+    ├── Commands/
+    │   ├── UssdListCommand.php     # ussd:list
+    │   └── UssdCleanCommand.php    # ussd:clean
+    └── Resources/
+        └── lang/                   # Translation files (EN/FR)
 ```
 
 ### Key design patterns
@@ -588,33 +717,30 @@ Please follow PSR-12 coding standards and include tests.
 
 ## Roadmap
 
-### v1.0 (current)
+### v1.0
 
 - [x] Menu system with fluent API
 - [x] Multi-step flow engine (state machine)
-- [x] Session management (database + array drivers)
-- [x] Gateway driver abstraction
+- [x] Session management (database + Redis + array)
+- [x] 11 gateway drivers (Orange, Moov, AT, Infobip, Twilio, Beem, Advanta, Hubtel, MTN, Vodacom, Airtel)
+- [x] Rate limiting per phone number
+- [x] Multi-language support (EN/FR)
+- [x] Artisan commands (`ussd:list`, `ussd:clean`)
+- [x] CSRF exclusion auto-configuration
 - [x] USSD simulator
 - [x] Request/response logging
 - [x] Error handling
 - [x] PHPUnit test suite
+- [x] GitHub Actions CI
 
 ### v1.1
 
-- [ ] Redis session driver
-- [ ] Orange official driver
-- [ ] Africa's Talking driver
-- [ ] Moov Africa driver
-- [ ] Artisan command: `ussd:list` (list all menus/flows)
-- [ ] Rate limiting
-
-### v1.2
-
-- [ ] Visual flow builder
+- [ ] Visual flow designer UI
 - [ ] Analytics dashboard
-- [ ] Scheduled session cleanup
-- [ ] Multi-language support
+- [ ] Webhook integration
+- [ ] REST API for session management
 - [ ] Broadcast messages
+- [ ] Push USSD (MT sessions)
 
 ### v2.0
 
