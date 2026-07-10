@@ -106,6 +106,10 @@ class UssdServiceProvider extends ServiceProvider
                     $app['config']->get('ussd.session_table', 'ussd_sessions')
                 ),
                 'array'    => new Drivers\Session\ArraySessionDriver(),
+                'redis'    => new Drivers\Session\RedisSessionDriver(
+                    connection: $app['config']->get('ussd.redis_connection', 'default'),
+                    ttlMinutes: $app['config']->get('ussd.session_lifetime', 2),
+                ),
                 default    => new Drivers\Session\DatabaseSessionDriver(
                     $app['config']->get('ussd.session_table', 'ussd_sessions')
                 ),

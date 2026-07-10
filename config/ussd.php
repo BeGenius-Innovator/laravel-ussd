@@ -48,6 +48,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Redis Connection
+    |--------------------------------------------------------------------------
+    |
+    | The Redis connection to use when session_driver is set to "redis".
+    | Corresponds to a connection defined in config/database.php.
+    |
+    */
+
+    'redis_connection' => env('USSD_REDIS_CONNECTION', 'default'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Lifetime
     |--------------------------------------------------------------------------
     |
