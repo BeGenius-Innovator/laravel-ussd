@@ -10,6 +10,7 @@ use BeGenius\Ussd\Services\SessionManager;
 use BeGenius\Ussd\Contracts\SessionDriver as SessionDriverContract;
 use BeGenius\Ussd\Drivers\DefaultUssdDriver;
 use BeGenius\Ussd\Contracts\UssdDriver as UssdDriverContract;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -63,6 +64,7 @@ class UssdServiceProvider extends ServiceProvider
         $this->loadMigrations();
         $this->loadRoutes();
         $this->registerCommands();
+        $this->excludeFromCsrf();
     }
 
     /**
@@ -194,5 +196,23 @@ class UssdServiceProvider extends ServiceProvider
                 Console\UssdCleanCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Exclude USSD callback routes from CSRF protection.
+     *
+     * USSD gateways send POST requests without CSRF tokens.
+     * Without this exclusion, all USSD requests would be rejected.
+     */
+    protected function excludeFromCsrf(): void
+    {
+        $prefix = $this->app['config']->get('ussd.routes_prefix', 'ussd');
+
+        $this->app->afterResolving(
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            function ($middleware) use ($prefix) {
+                $middleware->except[] = $prefix.'/callback';
+            }
+        );
     }
 }
