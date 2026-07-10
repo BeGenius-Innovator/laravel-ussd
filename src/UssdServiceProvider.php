@@ -62,6 +62,7 @@ class UssdServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'ussd');
         $this->loadMigrations();
         $this->loadRoutes();
+        $this->registerCommands();
     }
 
     /**
@@ -177,5 +178,21 @@ class UssdServiceProvider extends ServiceProvider
     protected function loadRoutes(): void
     {
         $this->loadRoutesFrom(__DIR__.'/../routes/ussd.php');
+    }
+
+    /**
+     * Register Artisan commands.
+     *
+     * php artisan ussd:list  — List all registered menus
+     * php artisan ussd:clean — Purge expired sessions
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                Console\UssdListCommand::class,
+                Console\UssdCleanCommand::class,
+            ]);
+        }
     }
 }
