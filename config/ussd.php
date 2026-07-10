@@ -13,7 +13,19 @@ return [
     | parse incoming requests. You may implement your own driver
     | for each gateway (Orange, Moov, Africa's Talking, etc.).
     |
-    | Supported drivers: "default"
+    | Supported drivers:
+    |   "default"        — Generic driver (sessionId, phoneNumber, text)
+    |   "africastalking" — Africa's Talking gateway
+    |   "orange"         — Orange telecom gateway
+    |   "moov"           — Moov/Africell gateway
+    |   "infobip"        — Infobip gateway
+    |   "twilio"         — Twilio USSD gateway
+    |   "beem"           — Beem Africa gateway
+    |   "advanta"        — Advanta Africa gateway
+    |   "hubtel"         — Hubtel Ghana gateway
+    |   "mtn"            — MTN gateway
+    |   "vodacom"        — Vodacom/Vodafone gateway
+    |   "airtel"         — Airtel Africa gateway
     |
     */
 

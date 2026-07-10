@@ -81,7 +81,19 @@ class UssdServiceProvider extends ServiceProvider
             $driver = $app['config']->get('ussd.default_driver', 'default');
 
             return match ($driver) {
-                default => new DefaultUssdDriver(),
+                'default'        => new DefaultUssdDriver(),
+                'africastalking' => new Drivers\Gateway\AfricasTalkingDriver(),
+                'orange'         => new Drivers\Gateway\OrangeDriver(),
+                'moov'           => new Drivers\Gateway\MoovDriver(),
+                'infobip'        => new Drivers\Gateway\InfobipDriver(),
+                'twilio'         => new Drivers\Gateway\TwilioDriver(),
+                'beem'           => new Drivers\Gateway\BeemDriver(),
+                'advanta'        => new Drivers\Gateway\AdvantaDriver(),
+                'hubtel'         => new Drivers\Gateway\HubtelDriver(),
+                'mtn'            => new Drivers\Gateway\MtnDriver(),
+                'vodacom'        => new Drivers\Gateway\VodacomDriver(),
+                'airtel'         => new Drivers\Gateway\AirtelDriver(),
+                default          => new DefaultUssdDriver(),
             };
         });
 
