@@ -1,0 +1,72 @@
+{
+  "name": "begenius/laravel-ussd",
+  "description": "A Laravel package to build scalable USSD applications and workflows.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "ussd",
+    "mobile",
+    "telecom",
+    "africa",
+    "sms",
+    "gateway",
+    "orange",
+    "moov",
+    "africastalking"
+  ],
+  "support": {
+    "issues": "https://github.com/begenius/laravel-ussd/issues",
+    "source": "https://github.com/begenius/laravel-ussd"
+  },
+  "authors": [
+    {
+      "name": "BeGenius Innovator",
+      "email": "loucario24@gmail.com",
+      "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "BeGenius\\Ussd\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "BeGenius\\Ussd\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.2|^8.3|^8.4",
+    "illuminate/contracts": "^11.0|^12.0|^13.0",
+    "illuminate/database": "^11.0|^12.0|^13.0",
+    "illuminate/routing": "^11.0|^12.0|^13.0",
+    "illuminate/support": "^11.0|^12.0|^13.0",
+    "illuminate/view": "^11.0|^12.0|^13.0",
+    "nesbot/carbon": "^3.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0",
+    "phpunit/phpunit": "^11.0"
+  },
+  "scripts": {
+    "test": "phpunit",
+    "test-coverage": "phpunit --coverage-html coverage"
+  },
+  "config": {
+    "sort-packages": true,
+    "preferred-install": "dist"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "BeGenius\\Ussd\\UssdServiceProvider"
+      ],
+      "aliases": {
+        "Ussd": "BeGenius\\Ussd\\Facades\\Ussd"
+      }
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
