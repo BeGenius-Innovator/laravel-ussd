@@ -23,7 +23,7 @@ jobs:
           - php: 8.2
             stability: prefer-lowest
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} (${{ matrix.stability }})
+    name: PHP ${{ matrix.php }} - L${{ matrix.laravel }} (${{ matrix.stability }})
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "illuminate/support:^${{ matrix.laravel }}" "illuminate/console:^${{ matrix.laravel }}" --no-interaction --no-update
+          TESTBENCH="${{ matrix.laravel == 11 && '^9.0' || matrix.laravel == 12 && '^10.0' || '^11.0' }}"
+          composer require "orchestra/testbench:${TESTBENCH}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Run PHPUnit
