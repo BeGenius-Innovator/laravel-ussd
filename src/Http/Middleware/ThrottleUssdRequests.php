@@ -78,8 +78,8 @@ class ThrottleUssdRequests
 
     private function addHeaders(Response $response, int $maxAttempts, int $remaining): Response
     {
-        $response->headers->set('X-RateLimit-Limit', $maxAttempts);
-        $response->headers->set('X-RateLimit-Remaining', $remaining);
+        $response->headers->set('X-RateLimit-Limit', (string) $maxAttempts);
+        $response->headers->set('X-RateLimit-Remaining', (string) $remaining);
 
         return $response;
     }
