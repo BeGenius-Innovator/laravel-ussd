@@ -70,4 +70,12 @@ class SessionManager
     {
         return $this->lifetimeMinutes;
     }
+
+    /**
+     * Expose the underlying driver (for cleanup commands, etc.).
+     */
+    public function getDriver(): SessionDriver
+    {
+        return $this->driver;
+    }
 }
